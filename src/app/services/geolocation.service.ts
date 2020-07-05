@@ -1,17 +1,31 @@
 import { Injectable } from '@angular/core';
 import { Coords } from '../structures/cords.structure';
+import { state } from '@angular/animations';
+import { Observable, Subject } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class GeolocationService {
+  public coordsSubject: Subject<Coords> = new Subject<Coords>();
+  public coords$: Observable<Coords> = this.coordsSubject.asObservable();
+  public permissions$: Promise<string>;
+  public coordsPromise: Promise<Coords>
 
-  public coords$: Promise<Coords>;
-
-  constructor() { }
+  constructor() {
+    this.permissions$ = (navigator as any).permissions.query({name: 'geolocation'}).then(
+      permission => permission.state
+    );
+  }
 
   requestGeolocation() {
-    this.coords$ = this.getGeolocation();
+    if(!this.coordsPromise) {
+      this.coordsPromise = this.getGeolocation();
+    }
+
+    this.coordsPromise.then(coords=>{
+      this.coordsSubject.next(coords);
+    })
   }
 
   getGeolocation(): Promise<Coords>{
